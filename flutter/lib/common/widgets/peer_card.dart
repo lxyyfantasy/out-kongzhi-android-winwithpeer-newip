@@ -1686,7 +1686,7 @@ void connectInPeerTab(BuildContext context, Peer peer, PeerTabIndex tab,
     return;
   }
   if (ledgerInfo.leaseExpired) {
-    showToast(translate('租赁已到期，无法连接'));
+    showToast(translate('未开通，无法连接'));
     return;
   }
   connect(context, peer.id,
