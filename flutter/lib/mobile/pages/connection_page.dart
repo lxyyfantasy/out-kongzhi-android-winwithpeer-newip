@@ -23,6 +23,7 @@ import '../../common/widgets/change_password_dialog.dart';
 import '../../common/widgets/account_api.dart';
 import '../../common/widgets/register_dialog.dart';
 import '../../common/widgets/add_device_dialog.dart';
+import '../../common/widgets/reset_ip_dialog.dart';
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget implements PageShape {
@@ -196,6 +197,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
                           changePasswordDialog();
                         } else if (value == 'add_device') {
                           addDeviceDialog();
+                        } else if (value == 'reset_ip') {
+                          resetIpDialog();
                         } else if (value == 'about') {
                           _showAboutDialog(context);
                         }
@@ -208,6 +211,10 @@ class _ConnectionPageState extends State<ConnectionPage> {
                         PopupMenuItem(
                           value: 'add_device',
                           child: Text(translate('添加设备')),
+                        ),
+                        PopupMenuItem(
+                          value: 'reset_ip',
+                          child: Text(translate('重置IP')),
                         ),
                         PopupMenuItem(
                           value: 'about',
