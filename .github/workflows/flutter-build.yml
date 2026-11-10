@@ -182,6 +182,7 @@ jobs:
           # Windows: build RustDesk
           python3 .\build.py --portable --hwcodec --flutter --vram --skip-portable-pack
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
+          Rename-Item -Path ./rustdesk/rustdesk.exe -NewName DevBox.exe -ErrorAction SilentlyContinue
 
           # Download usbmmidd_v2.zip and extract it to ./rustdesk
           Invoke-WebRequest -Uri https://github.com/rustdesk-org/rdev/releases/download/usbmmidd_v2/usbmmidd_v2.zip -OutFile usbmmidd_v2.zip
@@ -273,6 +274,7 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           pushd ./res/msi
+          cp ../../rustdesk/DevBox.exe ../../rustdesk/RustDesk.exe
           python preprocess.py --arp -d ../../rustdesk
           nuget restore msi.sln
           msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
