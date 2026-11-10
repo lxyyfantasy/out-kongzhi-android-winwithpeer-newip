@@ -661,7 +661,7 @@ impl Config {
         }
         // 最后统一保存
         config2.store();
-		
+        
         config
     }
 
@@ -830,17 +830,27 @@ impl Config {
         if !primary.is_empty() {
             format!("{}:{}", primary, RENDEZVOUS_PORT)
         } else {
-            format!("{}:{}", PRIMARY_RENDEZVOUS_SERVER, RENDEZVOUS_PORT)
+            #[cfg(windows)]
+            return "".to_owned();
+            #[cfg(not(windows))]
+            return format!("{}:{}", PRIMARY_RENDEZVOUS_SERVER, RENDEZVOUS_PORT);
         }
     }
     
     pub fn get_rendezvous_servers() -> Vec<String> {
         let primary = Config::get_option(EXTERNAL_PRIMARY_SERVER);
         let secondary = Config::get_option(EXTERNAL_SECONDARY_SERVER);
-        if !primary.is_empty() && !secondary.is_empty() {
-            vec![primary, secondary]
+        if !primary.is_empty() {
+            let mut v = vec![primary];
+            if !secondary.is_empty() {
+                v.push(secondary);
+            }
+            v
         } else {
-            RENDEZVOUS_SERVERS.iter().map(|s| s.to_string()).collect()
+            #[cfg(windows)]
+            return vec![];
+            #[cfg(not(windows))]
+            return RENDEZVOUS_SERVERS.iter().map(|s| s.to_string()).collect();
         }
     }
 
@@ -1163,14 +1173,44 @@ impl Config {
         config.store();
     }
 
-		pub fn get_option(k: &str) -> String {
-			match k {
+        pub fn get_option(k: &str) -> String {
+            match k {
                 // 增加拉取key
                 // "key" => "中继Key".to_string(),
-				"custom-rendezvous-server" => format!(
-                "{},{}",
-                PRIMARY_RENDEZVOUS_SERVER, SECONDARY_RENDEZVOUS_SERVER
-            ),
+                "custom-rendezvous-server" => {
+                    #[cfg(windows)]
+                    {
+                        let primary = get_or(
+                            &OVERWRITE_SETTINGS,
+                            &CONFIG2.read().unwrap().options,
+                            &DEFAULT_SETTINGS,
+                            EXTERNAL_PRIMARY_SERVER,
+                        )
+                        .unwrap_or_default();
+                        let secondary = get_or(
+                            &OVERWRITE_SETTINGS,
+                            &CONFIG2.read().unwrap().options,
+                            &DEFAULT_SETTINGS,
+                            EXTERNAL_SECONDARY_SERVER,
+                        )
+                        .unwrap_or_default();
+                        if !primary.is_empty() && !secondary.is_empty() {
+                            format!("{},{}", primary, secondary)
+                        } else if !primary.is_empty() {
+                            primary
+                        } else {
+                            "".to_owned()
+                        }
+                    }
+                    #[cfg(not(windows))]
+                    {
+                        format!(
+                            "{},{}",
+                            PRIMARY_RENDEZVOUS_SERVER, SECONDARY_RENDEZVOUS_SERVER
+                        )
+                    }
+                }
+            }
             "relay-server" => format!(
                 "{},{}",
                 PRIMARY_RENDEZVOUS_SERVER, SECONDARY_RENDEZVOUS_SERVER
@@ -1196,7 +1236,10 @@ impl Config {
                 if !primary.is_empty() {
                     format!("http://{}:23399", primary)
                 } else {
-                    format!("http://{}:23399", PRIMARY_RENDEZVOUS_SERVER)
+                    #[cfg(windows)]
+                    return "".to_owned();
+                    #[cfg(not(windows))]
+                    return format!("http://{}:23399", PRIMARY_RENDEZVOUS_SERVER);
                 }
             }
             _ => get_or(

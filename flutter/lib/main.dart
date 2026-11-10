@@ -181,6 +181,15 @@ void runMobileApp() async {
   await initEnv(kAppTypeMain);
   checkUpdate();
   if (isAndroid) androidChannelInit();
+  if (isAndroid) {
+    try {
+      final androidId =
+          (await RdPlatformChannel.instance.getAndroidId()).trim();
+      if (androidId.isNotEmpty) {
+        await bind.mainSetOption(key: 'android_id', value: androidId);
+      }
+    } catch (_) {}
+  }
   if (isAndroid) platformFFI.syncAndroidServiceAppDirConfigPath();
   draggablePositions.load();
   await Future.wait([gFFI.abModel.loadCache(), gFFI.groupModel.loadCache()]);

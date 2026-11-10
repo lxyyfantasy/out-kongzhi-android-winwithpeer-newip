@@ -25,6 +25,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart' as window_size;
 import '../widgets/button.dart';
+import 'package:flutter_hbb/common/widgets/peers_view.dart';
+import 'package:flutter_hbb/common/widgets/login.dart';
+import 'package:flutter_hbb/models/ab_model.dart';
+import 'package:flutter_hbb/common/widgets/register_dialog.dart';
+import 'package:flutter_hbb/common/widgets/change_password_dialog.dart';
+import 'package:flutter_hbb/common/widgets/reset_ip_dialog.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -59,21 +65,192 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final isIncomingOnly = bind.isIncomingOnly();
-    return _buildBlock(
-        child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        buildLeftPane(context),
-        if (!isIncomingOnly) const VerticalDivider(width: 1),
-        if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
-      ],
-    ));
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          _buildTopBar(context),
+          const Divider(height: 1, thickness: 1),
+          Expanded(
+            child: Container(
+              color: Colors.white,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: AddressBookPeersView(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBlock({required Widget child}) {
     return buildRemoteBlock(
         block: _block, mask: true, use: canBeBlocked, child: child);
+  }
+
+  Widget _buildTopBar(BuildContext context) {
+    const greenColor = Color(0xFF2E7D32);
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Obx(() {
+        final isLogin = gFFI.userModel.isLogin;
+        final userName = gFFI.userModel.userName.value;
+        return Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Clipboard.setData(
+                      ClipboardData(text: gFFI.serverModel.serverId.text));
+                  showToast(translate("Copied"));
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("ID: ",
+                        style: TextStyle(fontSize: 14, color: Colors.black)),
+                    Flexible(
+                      child: Text(
+                        gFFI.serverModel.serverId.text,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 14, color: Colors.black),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 24),
+            TextButton(
+              onPressed: () async {
+                if (isLogin) {
+                  logOutConfirmDialog();
+                } else {
+                  await loginDialog();
+                }
+              },
+              child: Text(
+                isLogin ? "登出 ($userName)" : "登录",
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: greenColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 20, color: Colors.black),
+              tooltip: "刷新地址簿",
+              onPressed: () async {
+                if (isWindows) await syncDeviceChange();
+                await gFFI.abModel
+                    .pullAb(force: ForcePullAb.listAndCurrent, quiet: false);
+                ledgerRefreshTick.value++;
+                showToast(translate("刷新成功"));
+              },
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.black),
+              onSelected: (value) {
+                if (value == 'register') {
+                  registerRecoverDialog();
+                } else if (value == 'change_password') {
+                  changePasswordDialog();
+                } else if (value == 'reset_ip') {
+                  resetIpDialog();
+                } else if (value == 'operation') {
+                  gFFI.dialogManager.show((setState, close, context) {
+                    return CustomAlertDialog(
+                      title: Text(translate("移动端操作鼠标对照")),
+                      content: const SelectionArea(
+                        child: Text(
+                          "左键单击：确定    右键单击：回退\n右键双击：返回桌面    右键长按：任务栏",
+                          style: TextStyle(
+                              fontSize: 14, color: Colors.black, height: 1.6),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                            onPressed: close,
+                            child: const Text("关闭",
+                                style: TextStyle(
+                                    color: Colors.black, fontSize: 14))),
+                      ],
+                      onSubmit: close,
+                      onCancel: close,
+                    );
+                  });
+                } else if (value == 'about') {
+                  gFFI.dialogManager.show((setState, close, context) {
+                    return CustomAlertDialog(
+                      title: Text(translate("关于")),
+                      content: const SelectionArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                "请不要对外提供任何个人信息和密码，重要密码安全界面会导致黑不显示，多次按回退即可退出，重要密码请在自己设备登录使用。",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    height: 1.6)),
+                            SizedBox(height: 12),
+                            Text("本软件基于 RustDesk 开源项目修改，遵循 AGPL-3.0 许可证。",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    height: 1.6)),
+                            SizedBox(height: 12),
+                            Text(
+                                "源代码地址：https://codeberg.org/openshow/openshow.git",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    height: 1.6)),
+                            SizedBox(height: 12),
+                            Text(
+                                "AGPL-3.0 许可证全文：https://www.gnu.org/licenses/agpl-3.0.html",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    height: 1.6)),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                            onPressed: close,
+                            child: const Text("关闭",
+                                style: TextStyle(
+                                    color: Colors.black, fontSize: 14))),
+                      ],
+                      onSubmit: close,
+                      onCancel: close,
+                    );
+                  });
+                }
+              },
+              itemBuilder: (BuildContext context) => [
+                PopupMenuItem(
+                    value: 'register', child: Text(translate("注册"))),
+                PopupMenuItem(
+                    value: 'change_password',
+                    child: Text(translate("修改密码"))),
+                PopupMenuItem(
+                    value: 'operation', child: Text(translate("操作"))),
+                PopupMenuItem(
+                    value: 'reset_ip', child: Text(translate("重置IP"))),
+                PopupMenuItem(value: 'about', child: Text(translate("关于"))),
+              ],
+            ),
+          ],
+        );
+      }),
+    );
   }
 
   Widget buildLeftPane(BuildContext context) {
@@ -697,6 +874,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   @override
   void initState() {
     super.initState();
+    if (isWindows) startDeviceChangeSync();
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();

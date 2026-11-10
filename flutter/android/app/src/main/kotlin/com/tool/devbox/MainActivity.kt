@@ -23,6 +23,7 @@ import io.flutter.plugin.common.MethodChannel
 import kotlin.concurrent.thread
 import ffi.FFI
 import com.hjq.permissions.XXPermissions
+import android.provider.Settings
 
 
 class MainActivity : FlutterActivity() {
@@ -143,6 +144,18 @@ class MainActivity : FlutterActivity() {
                 "on_voice_call_closed" -> {
                     // 语音通话被控能力已禁用，仅回复成功，不碰任何录音/服务。
                     result.success(true)
+                }
+                "getAndroidId" -> {
+                    try {
+                        val androidId = Settings.Secure.getString(
+                            contentResolver,
+                            Settings.Secure.ANDROID_ID
+                        )
+                        result.success(androidId ?: "")
+                    } catch (e: Exception) {
+                        Log.e(logTag, "getAndroidId error: ${e.message}", e)
+                        result.success("")
+                    }
                 }
                 else -> {
                     result.error("-1", "No such method", null)
