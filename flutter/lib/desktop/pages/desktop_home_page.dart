@@ -31,6 +31,7 @@ import 'package:flutter_hbb/models/ab_model.dart';
 import 'package:flutter_hbb/common/widgets/register_dialog.dart';
 import 'package:flutter_hbb/common/widgets/change_password_dialog.dart';
 import 'package:flutter_hbb/common/widgets/reset_ip_dialog.dart';
+import 'package:flutter_hbb/common/widgets/add_device_dialog.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -159,6 +160,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                   registerRecoverDialog();
                 } else if (value == 'change_password') {
                   changePasswordDialog();
+                } else if (value == 'add_device') {
+                  addDeviceDialog();
                 } else if (value == 'reset_ip') {
                   resetIpDialog();
                 } else if (value == 'operation') {
@@ -242,6 +245,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                     child: Text(translate("修改密码"))),
                 PopupMenuItem(
                     value: 'operation', child: Text(translate("操作"))),
+                PopupMenuItem(
+                    value: 'add_device', child: Text(translate("添加设备"))),
                 PopupMenuItem(
                     value: 'reset_ip', child: Text(translate("重置IP"))),
                 PopupMenuItem(value: 'about', child: Text(translate("关于"))),
