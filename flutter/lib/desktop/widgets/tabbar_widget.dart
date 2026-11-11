@@ -1178,11 +1178,6 @@ class _TabState extends State<_Tab> with RestorationMixin {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             _buildTabContent(),
-                            Obx((() => _CloseButton(
-                                  visible: hover.value && widget.closable,
-                                  tabSelected: isSelected,
-                                  onClose: () => widget.onClose(),
-                                )))
                           ])).paddingOnly(left: 10, right: 5),
                   Offstage(
                     offstage: !showDivider,
@@ -1389,32 +1384,7 @@ class _TabDropDownButtonState extends State<_TabDropDownButton> {
                   children: [
                     Expanded(
                       child: InkWell(child: Text(label)),
-                    ),
-                    Obx(
-                      () {
-                        if (tabInfo?.onTabCloseButton != null &&
-                            menuHover.value) {
-                          return InkWell(
-                              onTap: () {
-                                tabInfo?.onTabCloseButton?.call();
-                                if (Navigator.of(context).canPop()) {
-                                  Navigator.of(context).pop();
-                                }
-                              },
-                              child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  onHover: (event) =>
-                                      setState(() => btnHover.value = true),
-                                  onExit: (event) =>
-                                      setState(() => btnHover.value = false),
-                                  child: Icon(Icons.close,
-                                      color:
-                                          btnHover.value ? Colors.red : null)));
-                        } else {
-                          return Offstage();
-                        }
-                      },
-                    ),
+                    ),                   
                   ],
                 ),
               ),

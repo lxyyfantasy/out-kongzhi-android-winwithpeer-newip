@@ -327,6 +327,10 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       if (hide.value) {
         return const SizedBox.shrink();
       }
+      // [custom] always hide toolbar UI on Windows while keeping logic alive
+      if (isWindows) {
+        return const SizedBox.shrink();
+      }
       return Align(
         alignment: Alignment.topCenter,
         child: collapse.isFalse

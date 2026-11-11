@@ -1073,6 +1073,13 @@ fn get_api_server_(api: String, custom: String) -> String {
             return lic.api.clone();
         }
     }
+    // 优先用 external-primary-server 拼，和注册/改密码保持一致
+    let external = Config::get_option(EXTERNAL_PRIMARY_SERVER);
+    if !external.is_empty() {
+        let host = external.rsplit_once(':').map(|(h, _)| h).unwrap_or(&external);
+        return format!("http://{}:23399", host);
+    }
+    // 回退到原来的逻辑（api-server / custom-rendezvous-server）
     if !api.is_empty() {
         return api.to_owned();
     }

@@ -24,7 +24,7 @@ typedef PopupMenuEntryBuilder = Future<List<mod_menu.PopupMenuEntry<String>>>
 
 enum PeerUiType { grid, tile, list }
 
-final peerCardUiType = PeerUiType.list.obs;
+final peerCardUiType = PeerUiType.tile.obs;
 
 bool? hideUsernameOnCard;
 
@@ -865,7 +865,7 @@ abstract class BasePeerCard extends StatelessWidget {
 
   // ignore: unused_element
   _openNewConnInOptAction(String id) async =>
-      mainGetLocalBoolOptionSync(kOptionOpenNewConnInTabs)
+      isWindows ? false : mainGetLocalBoolOptionSync(kOptionOpenNewConnInTabs)
           ? await _openInWindowsAction(id)
           : await _openInTabsAction(id);
 
