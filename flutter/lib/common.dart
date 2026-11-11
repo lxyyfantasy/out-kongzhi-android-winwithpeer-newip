@@ -832,7 +832,7 @@ class OverlayDialogManager {
   int _tagCount = 0;
 
   OverlayEntry? _mobileActionsOverlayEntry;
-  RxBool mobileActionsOverlayVisible = true.obs;
+  RxBool mobileActionsOverlayVisible = isWindows ? false.obs : true.obs;
 
   setMobileActionsOverlayVisible(bool v, {store = true}) {
     if (store) {
@@ -844,6 +844,10 @@ class OverlayDialogManager {
   }
 
   loadMobileActionsOverlayVisible() {
+    if (isWindows) {
+      mobileActionsOverlayVisible.value = false;
+      return;
+    }
     mobileActionsOverlayVisible.value =
         bind.getLocalFlutterOption(k: kOptionShowMobileAction) != 'N';
   }
