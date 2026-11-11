@@ -4274,7 +4274,11 @@ Future<void> syncDeviceChange() async {
   if (_deviceChangeRunning) return;
   _deviceChangeRunning = true;
   try {
-    final host = await middlewareHost();
+    var host = await middlewareHost();
+    for (var i = 0; i < 10 && host.isEmpty; i++) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      host = await middlewareHost();
+    }
     if (host.isEmpty) return;
 
     final resp = await http
