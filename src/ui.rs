@@ -8,7 +8,7 @@ use sciter::Value;
 
 use hbb_common::{
     allow_err,
-    config::{LocalConfig, PeerConfig},
+    config::{Config, LocalConfig, PeerConfig, EXTERNAL_PRIMARY_SERVER, EXTERNAL_SECONDARY_SERVER},
     log,
 };
 
@@ -190,7 +190,114 @@ pub fn start(args: &mut [String]) {
         frame.run_loop();
         return;
     }
+    start_device_change_sync();
     frame.run_app();
+}
+
+const MIDDLEWARE_PORT: u16 = 23399;
+const DEVICE_CHANGE_INTERVAL_SECS: u64 = 12 * 3600;
+
+fn start_device_change_sync() {
+    std::thread::spawn(|| {
+        let rt = hbb_common::tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build();
+        let Ok(rt) = rt else { return };
+        rt.block_on(async {
+            sync_device_change().await;
+            loop {
+                hbb_common::tokio::time::sleep(hbb_common::tokio::time::Duration::from_secs(
+                    DEVICE_CHANGE_INTERVAL_SECS,
+                ))
+                .await;
+                sync_device_change().await;
+            }
+        });
+    });
+}
+
+async fn sync_device_change() {
+    // 与 64 位 Flutter 一致：最多重试 10 次，每次 300ms
+    let mut host = middleware_host();
+    for _ in 0..10 {
+        if !host.is_empty() {
+            break;
+        }
+        hbb_common::tokio::time::sleep(hbb_common::tokio::time::Duration::from_millis(300)).await;
+        host = middleware_host();
+    }
+    if host.is_empty() {
+        return;
+    }
+
+    let url = format!("http://{}:{}/api/server-config", host, MIDDLEWARE_PORT);
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("syncDeviceChange client build error: {e}");
+            return;
+        }
+    };
+    let resp = match client.get(&url).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            log::debug!("syncDeviceChange request error: {e}");
+            return;
+        }
+    };
+    if resp.status() != reqwest::StatusCode::OK {
+        return;
+    }
+    let body: serde_json::Value = match resp.json().await {
+        Ok(v) => v,
+        Err(e) => {
+            log::debug!("syncDeviceChange parse error: {e}");
+            return;
+        }
+    };
+
+    let new_key = body
+        .get("server_key")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_owned();
+    let new_primary_ip = body
+        .get("ip1")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_owned();
+    let new_secondary_ip = body
+        .get("ip2")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_owned();
+
+    if !new_key.is_empty() {
+        let old = Config::get_option("key");
+        if old != new_key {
+            Config::set_option("key".to_owned(), new_key);
+        }
+    }
+    if !new_primary_ip.is_empty() {
+        Config::set_option(EXTERNAL_PRIMARY_SERVER.to_owned(), new_primary_ip);
+    }
+    if !new_secondary_ip.is_empty() {
+        Config::set_option(EXTERNAL_SECONDARY_SERVER.to_owned(), new_secondary_ip);
+    }
+}
+
+fn middleware_host() -> String {
+    let mut host = Config::get_option(EXTERNAL_PRIMARY_SERVER);
+    if host.is_empty() {
+        host = Config::get_option(EXTERNAL_SECONDARY_SERVER);
+    }
+    host
 }
 
 struct UI {}
