@@ -15,7 +15,6 @@ Future<void> registerRecoverDialog() async {
   final a1Ctrl = TextEditingController();
   final a2Ctrl = TextEditingController();
   final a3Ctrl = TextEditingController();
-  final invCtrl = TextEditingController();
   final npCtrl = TextEditingController();
 
   await gFFI.dialogManager.show<void>((setState, close, context) {
@@ -33,14 +32,12 @@ Future<void> registerRecoverDialog() async {
       final a1 = a1Ctrl.text;
       final a2 = a2Ctrl.text;
       final a3 = a3Ctrl.text;
-      final inv = invCtrl.text.trim();
       if (u.isEmpty ||
           p.isEmpty ||
           p2.isEmpty ||
           a1.isEmpty ||
           a2.isEmpty ||
-          a3.isEmpty ||
-          inv.isEmpty) {
+          a3.isEmpty) {
         setState(() => err = translate('所有格子不能为空'));
         return;
       }
@@ -53,16 +50,14 @@ Future<void> registerRecoverDialog() async {
         return;
       }
       setState(() => isInProgress = true);
-      final r = await AccountApi.register(u, p, a1, a2, a3, inv);
+      final r = await AccountApi.register(u, p, a1, a2, a3);
       setState(() => isInProgress = false);
       if (r.isOk) {
         showToast(translate('注册成功'));
         close();
         return;
       }
-      if (r.code == 'INVITE_ERROR') {
-        setState(() => err = translate('邀请码错误'));
-      } else if (r.msg.contains('已存在')) {
+      if (r.msg.contains('已存在')) {
         setState(() => err = translate('账号重复'));
       } else {
         setState(() => err = r.msg.isNotEmpty ? r.msg : translate('注册失败'));
@@ -178,8 +173,6 @@ Future<void> registerRecoverDialog() async {
               title: translate('最爱吃的东西是什么？'), controller: a2Ctrl),
           DialogTextField(
               title: translate('最好的朋友是谁？'), controller: a3Ctrl),
-          if (tab == 0)
-            DialogTextField(title: translate('邀请码'), controller: invCtrl),
           if (tab == 1) PasswordWidget(title: '新密码', controller: npCtrl),
           if (err != null)
             Padding(
