@@ -138,7 +138,30 @@ class AccountApi {
     }
   }
 
-    static Future<AccountApiResult> addDevice(
+  static Future<AccountApiResult> recoverPassword(String username, String a1,
+      String a2, String a3, String newPassword) async {
+    try {
+      final base = await _base();
+      final resp = await http
+          .post(
+            Uri.parse('$base/recover-password'),
+            headers: _headers(),
+            body: jsonEncode({
+              'username': username,
+              'answer1': a1,
+              'answer2': a2,
+              'answer3': a3,
+              'new_password': newPassword,
+            }),
+          )
+          .timeout(_timeout);
+      return _parse(resp);
+    } catch (_) {
+      return AccountApiResult('NETWORK_ERROR', '网络异常');
+    }
+  }
+
+  static Future<AccountApiResult> addDevice(
       String username, String deviceCode) async {
     try {
       final base = await _base();
